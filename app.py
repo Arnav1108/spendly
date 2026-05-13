@@ -1,7 +1,12 @@
-from flask import Flask, render_template
+import os
+import sqlite3
+
+from flask import Flask, render_template, request, redirect, url_for, flash
+from werkzeug.security import generate_password_hash
 from database.db import get_db, init_db, seed_db
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 with app.app_context():
     init_db()
@@ -17,8 +22,47 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name    = request.form.get("name", "").strip()
+        email   = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm  = request.form.get("confirm_password", "")
+
+        if not name or not email or not password or not confirm:
+            flash("All fields are required.", "error")
+            return render_template("register.html", name=name, email=email)
+
+        at = email.find("@")
+        if at < 1 or "." not in email[at:]:
+            flash("Enter a valid email address.", "error")
+            return render_template("register.html", name=name, email=email)
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "error")
+            return render_template("register.html", name=name, email=email)
+
+        if password != confirm:
+            flash("Passwords do not match.", "error")
+            return render_template("register.html", name=name, email=email)
+
+        db = get_db()
+        try:
+            db.execute(
+                "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+                (name, email, generate_password_hash(password)),
+            )
+            db.commit()
+        except sqlite3.IntegrityError:
+            flash("An account with that email already exists.", "error")
+            return render_template("register.html", name=name, email=email)
+        finally:
+            db.close()
+
+        flash("Account created! You can now sign in.", "success")
+        return redirect(url_for("login"))
+
     return render_template("register.html")
 
 
