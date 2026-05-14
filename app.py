@@ -89,7 +89,7 @@ def login():
             return render_template("login.html", email=email)
 
         session["user_id"] = user["id"]
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     return render_template("login.html")
 
@@ -116,7 +116,38 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    user = {
+        "name": "Demo User",
+        "email": "demo@spendly.com",
+        "member_since": "January 2026",
+    }
+    stats = {
+        "total_spent": "₹338.75",
+        "transactions": 8,
+        "top_category": "Bills",
+    }
+    expenses = [
+        {"date": "May 12, 2026", "description": "Restaurant lunch",  "category": "Food",          "amount": "₹22.00"},
+        {"date": "May 11, 2026", "description": "Miscellaneous",     "category": "Other",         "amount": "₹12.50"},
+        {"date": "May 10, 2026", "description": "Clothing",          "category": "Shopping",      "amount": "₹65.00"},
+        {"date": "May 08, 2026", "description": "Movie tickets",     "category": "Entertainment", "amount": "₹18.00"},
+        {"date": "May 07, 2026", "description": "Pharmacy",          "category": "Health",        "amount": "₹25.75"},
+    ]
+    categories = [
+        {"name": "Bills",         "amount": "₹120.00", "pct": 35},
+        {"name": "Food",          "amount": "₹67.50",  "pct": 20},
+        {"name": "Shopping",      "amount": "₹65.00",  "pct": 19},
+        {"name": "Transport",     "amount": "₹30.00",  "pct": 9},
+        {"name": "Health",        "amount": "₹25.75",  "pct": 8},
+        {"name": "Entertainment", "amount": "₹18.00",  "pct": 5},
+        {"name": "Other",         "amount": "₹12.50",  "pct": 4},
+    ]
+    return render_template("profile.html",
+                           user=user, stats=stats,
+                           expenses=expenses, categories=categories)
 
 
 @app.route("/expenses/add")

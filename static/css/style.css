@@ -28,6 +28,14 @@
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
+
+    --cat-green:  var(--accent);
+    --cat-amber:  var(--accent-2);
+    --cat-blue:   #4a90d9;
+    --cat-purple: #7c6fb0;
+    --cat-teal:   #3d9a8b;
+    --cat-rose:   #b05e6f;
+    --cat-slate:  #6b7a8d;
 }
 
 /* ------------------------------------------------------------------ */
