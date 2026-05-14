@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="profile-page">
+    <div class="profile-inner">
+
+        <!-- Profile header -->
+        <div class="profile-header">
+            <div class="profile-avatar">{{ user.name[0] | upper }}</div>
+            <div>
+                <div class="profile-name">{{ user.name }}</div>
+                <div class="profile-email">{{ user.email }}</div>
+                <div class="profile-since">Member since {{ user.member_since }}</div>
+            </div>
+        </div>
+
+        <!-- Summary stats -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Overview</h2>
+            <div class="profile-stats">
+                <div class="profile-stat-card">
+                    <div class="pstat-label">Total Spent</div>
+                    <div class="pstat-value">{{ stats.total_spent }}</div>
+                    <div class="pstat-sub">all time</div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="pstat-label">Transactions</div>
+                    <div class="pstat-value">{{ stats.transactions }}</div>
+                    <div class="pstat-sub">recorded</div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="pstat-label">Top Category</div>
+                    <div class="pstat-value">{{ stats.top_category }}</div>
+                    <div class="pstat-sub">highest spend</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent expenses -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Recent Expenses</h2>
+            <div class="expense-table-wrap">
+                <table class="expense-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th style="text-align:right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in expenses %}
+                        <tr>
+                            <td>{{ expense.date }}</td>
+                            <td>{{ expense.description }}</td>
+                            <td>
+                                <span class="badge badge-{{ expense.category | lower }}">
+                                    {{ expense.category }}
+                                </span>
+                            </td>
+                            <td class="amt">{{ expense.amount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Category breakdown -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Spending by Category</h2>
+            <div class="cat-breakdown">
+                {% for cat in categories %}
+                <div class="cat-row">
+                    <span class="cat-row-label">{{ cat.name }}</span>
+                    <div class="cat-row-track">
+                        <div class="cat-row-fill fill-{{ cat.name | lower }}"
+                             style="width: {{ cat.pct }}%"></div>
+                    </div>
+                    <span class="cat-row-amount">{{ cat.amount }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
