@@ -1,9 +1,10 @@
 import os
 import sqlite3
+from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import get_db, init_db, seed_db, get_user_by_email
+from database.db import get_db, init_db, seed_db, get_user_by_email, get_user_by_id, get_expenses_by_user
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
@@ -119,32 +120,51 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    user_row = get_user_by_id(session["user_id"])
+    if user_row is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    expense_rows = get_expenses_by_user(session["user_id"])
+
+    created_dt = datetime.strptime(user_row["created_at"][:10], "%Y-%m-%d")
     user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "member_since": "January 2026",
+        "name":         user_row["name"],
+        "email":        user_row["email"],
+        "member_since": f"{created_dt.strftime('%B')} {created_dt.year}",
     }
+
+    cat_totals = {}
+    for e in expense_rows:
+        cat_totals[e["category"]] = cat_totals.get(e["category"], 0.0) + e["amount"]
+
+    grand_total = sum(cat_totals.values())
+
     stats = {
-        "total_spent": "₹338.75",
-        "transactions": 8,
-        "top_category": "Bills",
+        "total_spent":  f"₹{grand_total:.2f}",
+        "transactions": len(expense_rows),
+        "top_category": max(cat_totals, key=cat_totals.get) if cat_totals else "—",
     }
-    expenses = [
-        {"date": "May 12, 2026", "description": "Restaurant lunch",  "category": "Food",          "amount": "₹22.00"},
-        {"date": "May 11, 2026", "description": "Miscellaneous",     "category": "Other",         "amount": "₹12.50"},
-        {"date": "May 10, 2026", "description": "Clothing",          "category": "Shopping",      "amount": "₹65.00"},
-        {"date": "May 08, 2026", "description": "Movie tickets",     "category": "Entertainment", "amount": "₹18.00"},
-        {"date": "May 07, 2026", "description": "Pharmacy",          "category": "Health",        "amount": "₹25.75"},
-    ]
+
+    expenses = []
+    for e in expense_rows:
+        dt = datetime.strptime(e["date"], "%Y-%m-%d")
+        expenses.append({
+            "date":        f"{dt.strftime('%B')} {dt.day}, {dt.year}",
+            "description": e["description"] or "",
+            "category":    e["category"],
+            "amount":      f"₹{e['amount']:.2f}",
+        })
+
     categories = [
-        {"name": "Bills",         "amount": "₹120.00", "pct": 35},
-        {"name": "Food",          "amount": "₹67.50",  "pct": 20},
-        {"name": "Shopping",      "amount": "₹65.00",  "pct": 19},
-        {"name": "Transport",     "amount": "₹30.00",  "pct": 9},
-        {"name": "Health",        "amount": "₹25.75",  "pct": 8},
-        {"name": "Entertainment", "amount": "₹18.00",  "pct": 5},
-        {"name": "Other",         "amount": "₹12.50",  "pct": 4},
+        {
+            "name":   name,
+            "amount": f"₹{amount:.2f}",
+            "pct":    round(amount / grand_total * 100) if grand_total else 0,
+        }
+        for name, amount in sorted(cat_totals.items(), key=lambda x: -x[1])
     ]
+
     return render_template("profile.html",
                            user=user, stats=stats,
                            expenses=expenses, categories=categories)
